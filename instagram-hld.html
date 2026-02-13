@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instagram — High Level Design</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08080c;--s1:#101018;--s2:#181824;--bd:#252538;--tx:#e4e4f0;--dim:#7a7a96;--ac:#e1306c;--ac2:#833ab4;--bl:#405de6;--gn:#27c76e;--cy:#00d4ff;--yw:#fccc63;--rd:#fd1d1d;--gr:linear-gradient(135deg,#833ab4,#e1306c,#fd1d1d,#f77737)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;line-height:1.75}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:9px}
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:-50%;background:radial-gradient(ellipse at 30% 40%,rgba(131,58,180,.1),transparent 55%),radial-gradient(ellipse at 70% 60%,rgba(225,48,108,.08),transparent 55%);animation:pulse 10s ease-in-out infinite alternate}
+@keyframes pulse{to{transform:scale(1.08) rotate(1deg)}}
+.hero-c{position:relative;z-index:1;padding:2rem}
+.badge{display:inline-block;border:1px solid var(--bd);border-radius:99px;padding:.35rem 1.1rem;font-size:.72rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--dim);margin-bottom:1.5rem}
+.hero h1{font-family:'Fraunces',serif;font-size:clamp(2.8rem,7vw,5.5rem);font-weight:900;background:var(--gr);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1;margin-bottom:1.2rem}
+.hero p{font-size:1.1rem;color:var(--dim);max-width:560px;margin:0 auto 2rem}
+.stats{display:flex;gap:2.5rem;justify-content:center;flex-wrap:wrap}
+.stat h3{font-size:1.8rem;font-weight:700;background:var(--gr);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat span{font-size:.78rem;color:var(--dim)}
+nav{position:sticky;top:0;z-index:99;background:rgba(8,8,12,.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--bd);overflow-x:auto}
+nav .inner{display:flex;gap:.3rem;max-width:1150px;margin:0 auto;padding:.6rem 1.2rem}
+nav a{color:var(--dim);text-decoration:none;font-size:.75rem;padding:.35rem .8rem;border-radius:6px;white-space:nowrap;transition:.2s}
+nav a:hover{color:var(--tx);background:var(--s2)}
+.wrap{max-width:1060px;margin:0 auto;padding:0 1.5rem}
+section{padding:4.5rem 0;border-bottom:1px solid var(--bd)}
+.lab{font-size:.68rem;letter-spacing:3px;text-transform:uppercase;color:var(--ac);font-weight:600;margin-bottom:.8rem;display:block}
+.stitle{font-family:'Fraunces',serif;font-size:clamp(1.8rem,3.5vw,2.7rem);font-weight:700;margin-bottom:1rem;line-height:1.2}
+.sdesc{color:var(--dim);font-size:1rem;max-width:660px;margin-bottom:2.5rem}
+.cg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.3rem}
+.card{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:1.6rem;transition:.3s}
+.card:hover{border-color:rgba(225,48,108,.3)}
+.card h3{font-size:1.05rem;font-weight:600;margin-bottom:.7rem}
+.card p{color:var(--dim);font-size:.9rem}
+.dia{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:1.8rem;margin:2rem 0;overflow-x:auto}
+.dia-t{font-size:.7rem;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin-bottom:1.2rem;text-align:center}
+.concept,.decision{border-radius:12px;padding:1.6rem;margin:1.5rem 0}
+.concept{background:linear-gradient(135deg,rgba(131,58,180,.07),rgba(225,48,108,.07));border:1px solid rgba(131,58,180,.22)}
+.decision{background:linear-gradient(135deg,rgba(0,212,255,.05),rgba(64,93,230,.05));border:1px solid rgba(0,212,255,.18)}
+.ctag,.dtag{display:inline-block;font-size:.6rem;letter-spacing:1.5px;text-transform:uppercase;padding:.2rem .6rem;border-radius:4px;margin-bottom:.7rem;font-weight:700;color:#fff}
+.ctag{background:var(--ac2)}
+.dtag{background:var(--cy);color:var(--bg)}
+.concept h4,.decision h4{font-size:1.05rem;margin-bottom:.5rem}
+.concept p,.decision p{color:var(--dim);font-size:.9rem;margin-top:.3rem}
+code{font-family:'JetBrains Mono',monospace;background:var(--s2);padding:.12rem .45rem;border-radius:4px;font-size:.82rem;color:var(--cy)}
+svg text{font-family:'DM Sans',sans-serif}
+.svgw{width:100%;display:flex;justify-content:center}
+table{width:100%;border-collapse:collapse;margin:1.3rem 0;font-size:.85rem}
+th{text-align:left;padding:.7rem .9rem;background:var(--s2);border:1px solid var(--bd);font-size:.72rem;letter-spacing:.5px;text-transform:uppercase;color:var(--dim)}
+td{padding:.7rem .9rem;border:1px solid var(--bd);color:var(--dim)}
+footer{text-align:center;padding:3rem 0;color:var(--dim);font-size:.8rem}
+@media(max-width:700px){.cg{grid-template-columns:1fr}section{padding:3rem 0}.dia{padding:1rem}}
+</style>
+</head>
+<body>
+<div class="hero"><div class="hero-c">
+<div class="badge">System Design Deep-Dive</div>
+<h1>Instagram HLD</h1>
+<p>A comprehensive High-Level Design of one of the world's largest photo &amp; video sharing platforms — serving billions of requests daily.</p>
+<div class="stats">
+<div class="stat"><h3>2B+</h3><span>Monthly Active Users</span></div>
+<div class="stat"><h3>~100M</h3><span>Photos / Day</span></div>
+<div class="stat"><h3>500K+</h3><span>Requests / Sec</span></div>
+<div class="stat"><h3>60B+</h3><span>Photos Stored</span></div>
+</div>
+</div></div>
+
+<nav><div class="inner">
+<a href="#req">Requirements</a><a href="#arch">Architecture</a><a href="#upload">Upload</a><a href="#feed">News Feed</a><a href="#store">Storage</a><a href="#search">Search</a><a href="#notif">Notifications</a><a href="#story">Stories</a><a href="#cdn">CDN</a><a href="#cache">Caching</a><a href="#db">Database</a><a href="#consist">Consistency</a><a href="#dec">Key Decisions</a>
+</div></nav>
+
+<section id="req"><div class="wrap">
+<span class="lab">01 — Foundation</span>
+<h2 class="stitle">Requirements</h2>
+<p class="sdesc">Before designing, we pin down what Instagram must do and how well.</p>
+<div class="cg">
+<div class="card"><h3>📸 Functional</h3><p>Upload photos &amp; videos · Follow/unfollow · Personalized news feed · Like, comment, share · Search users, hashtags, locations · Stories (24 h) · Direct messaging · Push notifications · Explore / trending page</p></div>
+<div class="card"><h3>⚡ Non-Functional</h3><p><strong>Availability:</strong> 99.99% (&lt;52 min downtime/yr) · <strong>Latency:</strong> Feed &lt;200ms, upload &lt;2s · <strong>Scale:</strong> 500K+ req/s · <strong>Durability:</strong> Zero media loss · <strong>Consistency:</strong> Eventual for feed; strong for counters</p></div>
+<div class="card"><h3>📊 Capacity</h3><p><strong>Read:Write ≈ 100:1</strong> · 100M photos/day × 2MB = <strong>200TB/day</strong> · With thumbnails: ~300TB/day · Upload BW: ~28GB/s · Download: ~2.8TB/s · 5-year storage: <strong>~550 PB</strong></p></div>
+</div>
+<div class="concept"><span class="ctag">Concept</span><h4>Read-Heavy vs Write-Heavy Systems</h4><p>Instagram is <strong>read-heavy</strong> — users scroll feeds (reads) far more than they upload (writes). This shapes every decision: aggressive caching, pre-computed feeds, CDNs for fast reads. A logging service would be write-heavy and optimized differently. The read:write ratio fundamentally drives architecture choices.</p></div>
+</div></section>
+
+<section id="arch"><div class="wrap">
+<span class="lab">02 — Big Picture</span>
+<h2 class="stitle">High-Level Architecture</h2>
+<p class="sdesc">Complete system overview showing how all major components interact.</p>
+<div class="dia"><div class="dia-t">Complete System Architecture</div><div class="svgw">
+<svg viewBox="0 0 960 660" width="100%" style="max-width:960px" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#833ab4" stop-opacity=".85"/><stop offset="100%" stop-color="#e1306c" stop-opacity=".85"/></linearGradient>
+<linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#405de6" stop-opacity=".85"/><stop offset="100%" stop-color="#00d4ff" stop-opacity=".85"/></linearGradient>
+<linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#27c76e" stop-opacity=".85"/><stop offset="100%" stop-color="#00d4ff" stop-opacity=".85"/></linearGradient>
+</defs>
+<rect x="20" y="15" width="175" height="48" rx="10" fill="url(#g1)"/>
+<text x="107" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">📱 Mobile / Web Clients</text>
+<text x="107" y="52" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="8">iOS · Android · Web</text>
+<rect x="240" y="15" width="155" height="48" rx="10" fill="url(#g3)"/>
+<text x="317" y="38" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">🌐 CDN Layer</text>
+<text x="317" y="52" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="8">CloudFront · 200+ PoPs</text>
+<rect x="440" y="15" width="185" height="48" rx="10" fill="#1e1e2e" stroke="#353548"/>
+<text x="532" y="36" text-anchor="middle" fill="#e4e4f0" font-size="10" font-weight="600">DNS + Load Balancer</text>
+<text x="532" y="50" text-anchor="middle" fill="#7a7a96" font-size="8">Route53 · ALB / Nginx L7</text>
+<line x1="197" y1="39" x2="238" y2="39" stroke="#e1306c" stroke-width="1.3"/>
+<line x1="397" y1="39" x2="438" y2="39" stroke="#27c76e" stroke-width="1.3"/>
+<line x1="532" y1="65" x2="532" y2="88" stroke="#555" stroke-width="1" stroke-dasharray="4,3"/>
+<rect x="415" y="90" width="235" height="44" rx="10" fill="#14141f" stroke="#e1306c" stroke-width="1"/>
+<text x="532" y="110" text-anchor="middle" fill="#e4e4f0" font-size="11" font-weight="700">🔒 API Gateway</text>
+<text x="532" y="124" text-anchor="middle" fill="#7a7a96" font-size="8">Auth · Rate-Limit · Routing</text>
+<line x1="532" y1="136" x2="532" y2="158" stroke="#555" stroke-width="1" stroke-dasharray="4,3"/>
+
+<!-- MICROSERVICES -->
+<rect x="15" y="162" width="930" height="118" rx="10" fill="rgba(131,58,180,.04)" stroke="rgba(131,58,180,.12)"/>
+<text x="35" y="180" fill="#833ab4" font-size="9" font-weight="600" letter-spacing="1.5">MICROSERVICES</text>
+<rect x="30" y="192" width="108" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="84" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">User Svc</text>
+<text x="84" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Auth · Profile</text>
+<text x="84" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">Follow Graph</text>
+<text x="84" y="258" text-anchor="middle" fill="#00d4ff" font-size="7">gRPC</text>
+<rect x="148" y="192" width="108" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="202" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Post Svc</text>
+<text x="202" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Upload · Delete</text>
+<text x="202" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">Metadata CRUD</text>
+<text x="202" y="258" text-anchor="middle" fill="#00d4ff" font-size="7">gRPC</text>
+<rect x="266" y="192" width="108" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="320" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Feed Svc</text>
+<text x="320" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Generation</text>
+<text x="320" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">ML Ranking</text>
+<text x="320" y="258" text-anchor="middle" fill="#e1306c" font-size="7">Fan-out</text>
+<rect x="384" y="192" width="108" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="438" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Notif Svc</text>
+<text x="438" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Push · Email</text>
+<text x="438" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">In-App Alerts</text>
+<text x="438" y="258" text-anchor="middle" fill="#00d4ff" font-size="7">APNS/FCM</text>
+<rect x="502" y="192" width="108" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="556" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Search Svc</text>
+<text x="556" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Users · Tags</text>
+<text x="556" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">Locations</text>
+<text x="556" y="258" text-anchor="middle" fill="#00d4ff" font-size="7">Elasticsearch</text>
+<rect x="620" y="192" width="108" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="674" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Story Svc</text>
+<text x="674" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Ephemeral Media</text>
+<text x="674" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">24h TTL</text>
+<text x="674" y="258" text-anchor="middle" fill="#fccc63" font-size="7">Auto-expire</text>
+<rect x="738" y="192" width="108" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="792" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">DM Svc</text>
+<text x="792" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Messaging</text>
+<text x="792" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">E2E Encrypted</text>
+<text x="792" y="258" text-anchor="middle" fill="#00d4ff" font-size="7">WebSocket</text>
+<rect x="856" y="192" width="80" height="78" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="896" y="212" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Media Svc</text>
+<text x="896" y="226" text-anchor="middle" fill="#7a7a96" font-size="7">Process</text>
+<text x="896" y="238" text-anchor="middle" fill="#7a7a96" font-size="7">Transcode</text>
+
+<!-- ASYNC -->
+<rect x="15" y="300" width="930" height="50" rx="10" fill="rgba(0,212,255,.04)" stroke="rgba(0,212,255,.1)"/>
+<text x="35" y="318" fill="#00d4ff" font-size="9" font-weight="600" letter-spacing="1.5">ASYNC — MESSAGE QUEUES</text>
+<text x="35" y="338" fill="#7a7a96" font-size="9">Apache Kafka · Celery Workers · Image Processing Pipeline · ML Ranking Pipeline · Fan-out Workers</text>
+
+<!-- CACHE -->
+<rect x="15" y="368" width="930" height="50" rx="10" fill="rgba(252,204,99,.04)" stroke="rgba(252,204,99,.1)"/>
+<text x="35" y="386" fill="#fccc63" font-size="9" font-weight="600" letter-spacing="1.5">CACHING LAYER</text>
+<text x="35" y="406" fill="#7a7a96" font-size="9">Redis (Feed Cache · Counters · Social Graph) · Memcached (Sessions · Profiles) · CDN Edge Cache</text>
+
+<!-- DATA -->
+<rect x="15" y="436" width="930" height="210" rx="10" fill="rgba(39,199,110,.04)" stroke="rgba(39,199,110,.1)"/>
+<text x="35" y="456" fill="#27c76e" font-size="9" font-weight="600" letter-spacing="1.5">DATA LAYER</text>
+<rect x="30" y="468" width="130" height="165" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="95" y="488" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">PostgreSQL</text>
+<text x="95" y="502" text-anchor="middle" fill="#7a7a96" font-size="7">Users · Posts</text>
+<text x="95" y="514" text-anchor="middle" fill="#7a7a96" font-size="7">Comments · Likes</text>
+<text x="95" y="530" text-anchor="middle" fill="#e1306c" font-size="7">Sharded by user_id</text>
+<text x="95" y="624" text-anchor="middle" fill="#00d4ff" font-size="7">Primary RDBMS</text>
+
+<rect x="175" y="468" width="130" height="165" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="240" y="488" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Cassandra</text>
+<text x="240" y="502" text-anchor="middle" fill="#7a7a96" font-size="7">Feed Timelines</text>
+<text x="240" y="514" text-anchor="middle" fill="#7a7a96" font-size="7">Activity · Stories</text>
+<text x="240" y="530" text-anchor="middle" fill="#e1306c" font-size="7">Write-optimized</text>
+<text x="240" y="624" text-anchor="middle" fill="#00d4ff" font-size="7">Wide-Column</text>
+
+<rect x="320" y="468" width="130" height="165" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="385" y="488" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Amazon S3</text>
+<text x="385" y="502" text-anchor="middle" fill="#7a7a96" font-size="7">Photos · Videos</text>
+<text x="385" y="514" text-anchor="middle" fill="#7a7a96" font-size="7">Thumbnails</text>
+<text x="385" y="530" text-anchor="middle" fill="#e1306c" font-size="7">11 nines durability</text>
+<text x="385" y="624" text-anchor="middle" fill="#00d4ff" font-size="7">Object Storage</text>
+
+<rect x="465" y="468" width="130" height="165" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="530" y="488" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Elasticsearch</text>
+<text x="530" y="502" text-anchor="middle" fill="#7a7a96" font-size="7">Full-text Search</text>
+<text x="530" y="514" text-anchor="middle" fill="#7a7a96" font-size="7">Hashtags · Geo</text>
+<text x="530" y="530" text-anchor="middle" fill="#e1306c" font-size="7">Inverted Index</text>
+<text x="530" y="624" text-anchor="middle" fill="#00d4ff" font-size="7">Search Engine</text>
+
+<rect x="610" y="468" width="130" height="165" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="675" y="488" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Graph DB / TAO</text>
+<text x="675" y="502" text-anchor="middle" fill="#7a7a96" font-size="7">Social Graph</text>
+<text x="675" y="514" text-anchor="middle" fill="#7a7a96" font-size="7">Recommendations</text>
+<text x="675" y="530" text-anchor="middle" fill="#e1306c" font-size="7">Follower/Following</text>
+<text x="675" y="624" text-anchor="middle" fill="#00d4ff" font-size="7">Graph Store</text>
+
+<rect x="755" y="468" width="130" height="165" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="820" y="488" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Redis Cluster</text>
+<text x="820" y="502" text-anchor="middle" fill="#7a7a96" font-size="7">Rate Limits</text>
+<text x="820" y="514" text-anchor="middle" fill="#7a7a96" font-size="7">Like Counts</text>
+<text x="820" y="530" text-anchor="middle" fill="#e1306c" font-size="7">In-memory K/V</text>
+<text x="820" y="624" text-anchor="middle" fill="#00d4ff" font-size="7">Cache + Store</text>
+
+<line x1="480" y1="282" x2="480" y2="298" stroke="#444" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="480" y1="352" x2="480" y2="366" stroke="#444" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="480" y1="420" x2="480" y2="434" stroke="#444" stroke-width="1" stroke-dasharray="3,3"/>
+</svg>
+</div></div>
+
+<div class="concept"><span class="ctag">Concept</span><h4>Microservices Architecture</h4><p>Instead of one monolith, Instagram splits into small, independent services. Each owns its domain, has its own DB, and communicates via gRPC or message queues. Teams deploy independently, scale services individually (Feed Svc scales 10× more than Story Svc), and pick the best tech per service. <strong>Trade-off:</strong> you need service discovery (Consul), distributed tracing (Jaeger), and circuit breakers (Hystrix).</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>API Gateway</h4><p>Single entry-point for all client requests. Handles: <strong>Auth</strong> (verify JWT), <strong>Rate limiting</strong> (token-bucket, 200 req/min), <strong>Routing</strong> (<code>/feed</code> → Feed Svc), <strong>Protocol translation</strong> (REST → gRPC), and <strong>Response aggregation</strong> (combine data from multiple services). Like a smart receptionist for the entire backend.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>Load Balancer (L7)</h4><p>Distributes traffic across server instances. <strong>Layer 7</strong> means it inspects HTTP headers/paths to route smartly: <code>/api/feed/*</code> → Feed cluster, <code>/api/upload/*</code> → Post cluster. Uses round-robin, least-connections, or consistent hashing. Health checks auto-remove dead servers.</p></div>
+</div></section>
+
+<section id="upload"><div class="wrap">
+<span class="lab">03 — Core Flow</span>
+<h2 class="stitle">Photo Upload Flow</h2>
+<p class="sdesc">From "Share" tap to post appearing on followers' feeds.</p>
+<div class="dia"><div class="dia-t">Upload &amp; Processing Pipeline</div><div class="svgw">
+<svg viewBox="0 0 880 340" width="100%" style="max-width:880px" xmlns="http://www.w3.org/2000/svg">
+<rect x="10" y="18" width="120" height="52" rx="8" fill="url(#g1)"/>
+<text x="70" y="40" text-anchor="middle" fill="#fff" font-size="10" font-weight="600">📱 Client</text>
+<text x="70" y="55" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="7">Photo + Caption</text>
+<line x1="132" y1="44" x2="162" y2="44" stroke="#e1306c" stroke-width="1.2"/>
+<text x="147" y="38" text-anchor="middle" fill="#e1306c" font-size="7">①</text>
+
+<rect x="166" y="18" width="130" height="52" rx="8" fill="#18182a" stroke="#303044"/>
+<text x="231" y="38" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Pre-signed URL</text>
+<text x="231" y="50" text-anchor="middle" fill="#7a7a96" font-size="7">Direct → S3</text>
+<text x="231" y="62" text-anchor="middle" fill="#27c76e" font-size="7">Bypasses App Server ✓</text>
+<line x1="298" y1="44" x2="328" y2="44" stroke="#888" stroke-width="1"/>
+<text x="313" y="38" text-anchor="middle" fill="#888" font-size="7">②</text>
+
+<rect x="332" y="18" width="125" height="52" rx="8" fill="#18182a" stroke="#303044"/>
+<text x="394" y="38" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Post Service</text>
+<text x="394" y="50" text-anchor="middle" fill="#7a7a96" font-size="7">Save metadata → DB</text>
+<text x="394" y="62" text-anchor="middle" fill="#7a7a96" font-size="7">Generate post_id</text>
+<line x1="459" y1="44" x2="489" y2="44" stroke="#888" stroke-width="1"/>
+<text x="474" y="38" text-anchor="middle" fill="#888" font-size="7">③</text>
+
+<rect x="493" y="18" width="125" height="52" rx="8" fill="rgba(0,212,255,.07)" stroke="#00d4ff" stroke-width=".8"/>
+<text x="555" y="38" text-anchor="middle" fill="#00d4ff" font-size="9" font-weight="600">Kafka Event</text>
+<text x="555" y="50" text-anchor="middle" fill="#7a7a96" font-size="7">"new_post_created"</text>
+<text x="555" y="62" text-anchor="middle" fill="#7a7a96" font-size="7">④ Async fan-out</text>
+
+<rect x="670" y="18" width="140" height="52" rx="8" fill="rgba(39,199,110,.08)" stroke="#27c76e"/>
+<text x="740" y="38" text-anchor="middle" fill="#27c76e" font-size="9" font-weight="600">✓ 200 OK (~500ms)</text>
+<text x="740" y="53" text-anchor="middle" fill="#7a7a96" font-size="7">User sees "Post Shared!"</text>
+<line x1="620" y1="44" x2="668" y2="44" stroke="#27c76e" stroke-width="1"/>
+
+<!-- Async -->
+<text x="555" y="90" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="600">⬇ ASYNC WORKERS</text>
+<line x1="555" y1="72" x2="555" y2="96" stroke="#555" stroke-width="1" stroke-dasharray="3,3"/>
+<line x1="555" y1="96" x2="110" y2="120" stroke="#444" stroke-width=".8" stroke-dasharray="3,3"/>
+<line x1="555" y1="96" x2="330" y2="120" stroke="#444" stroke-width=".8" stroke-dasharray="3,3"/>
+<line x1="555" y1="96" x2="555" y2="120" stroke="#444" stroke-width=".8" stroke-dasharray="3,3"/>
+<line x1="555" y1="96" x2="770" y2="120" stroke="#444" stroke-width=".8" stroke-dasharray="3,3"/>
+
+<rect x="15" y="122" width="190" height="68" rx="8" fill="#18182a" stroke="#303044"/>
+<text x="110" y="142" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">🖼️ Image Processing</text>
+<text x="110" y="157" text-anchor="middle" fill="#7a7a96" font-size="7">1080×1080 · 640×640 · 150×150</text>
+<text x="110" y="169" text-anchor="middle" fill="#7a7a96" font-size="7">WebP + AVIF · Strip EXIF</text>
+<text x="110" y="181" text-anchor="middle" fill="#7a7a96" font-size="7">Apply filters if selected</text>
+
+<rect x="225" y="122" width="190" height="68" rx="8" fill="#18182a" stroke="#303044"/>
+<text x="320" y="142" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">📰 Feed Fan-out</text>
+<text x="320" y="157" text-anchor="middle" fill="#7a7a96" font-size="7">Push post_id → each follower's</text>
+<text x="320" y="169" text-anchor="middle" fill="#7a7a96" font-size="7">Redis feed cache</text>
+<text x="320" y="181" text-anchor="middle" fill="#e1306c" font-size="7">Hybrid Push/Pull model</text>
+
+<rect x="440" y="122" width="190" height="68" rx="8" fill="#18182a" stroke="#303044"/>
+<text x="535" y="142" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">🔔 Notifications</text>
+<text x="535" y="157" text-anchor="middle" fill="#7a7a96" font-size="7">Push via APNS / FCM</text>
+<text x="535" y="169" text-anchor="middle" fill="#7a7a96" font-size="7">to close friends &amp; recent</text>
+<text x="535" y="181" text-anchor="middle" fill="#7a7a96" font-size="7">interactors</text>
+
+<rect x="655" y="122" width="190" height="68" rx="8" fill="#18182a" stroke="#303044"/>
+<text x="750" y="142" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">🔍 Search Indexing</text>
+<text x="750" y="157" text-anchor="middle" fill="#7a7a96" font-size="7">Index hashtags, caption in</text>
+<text x="750" y="169" text-anchor="middle" fill="#7a7a96" font-size="7">Elasticsearch + location</text>
+
+<!-- Sub-results -->
+<line x1="110" y1="192" x2="110" y2="215" stroke="#27c76e" stroke-width=".8" stroke-dasharray="3,3"/>
+<rect x="15" y="217" width="190" height="35" rx="6" fill="rgba(39,199,110,.06)" stroke="#27c76e" stroke-width=".7"/>
+<text x="110" y="233" text-anchor="middle" fill="#27c76e" font-size="8" font-weight="600">→ Push to CDN Edges</text>
+<text x="110" y="245" text-anchor="middle" fill="#7a7a96" font-size="7">Thumbnails cached globally</text>
+
+<line x1="320" y1="192" x2="320" y2="215" stroke="#fccc63" stroke-width=".8" stroke-dasharray="3,3"/>
+<rect x="225" y="217" width="190" height="35" rx="6" fill="rgba(252,204,99,.06)" stroke="#fccc63" stroke-width=".7"/>
+<text x="320" y="233" text-anchor="middle" fill="#fccc63" font-size="8" font-weight="600">→ Feed Caches Updated</text>
+<text x="320" y="245" text-anchor="middle" fill="#7a7a96" font-size="7">Followers see on refresh</text>
+
+<!-- Timeline -->
+<rect x="15" y="280" width="775" height="30" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="35" y="300" fill="#e1306c" font-size="8" font-weight="600">LATENCY:</text>
+<text x="100" y="300" fill="#7a7a96" font-size="8">Upload ~500ms</text>
+<text x="225" y="300" fill="#7a7a96" font-size="8">│ Metadata ~100ms</text>
+<text x="390" y="300" fill="#7a7a96" font-size="8">│ Fan-out ~2-5s</text>
+<text x="545" y="300" fill="#7a7a96" font-size="8">│ CDN ~10s</text>
+</svg>
+</div></div>
+
+<div class="concept"><span class="ctag">Concept</span><h4>Pre-signed URLs (Direct S3 Upload)</h4><p>Instead of routing a 5MB photo through your app server, the server generates a <strong>pre-signed URL</strong> — a temporary, cryptographically signed URL that lets the client upload directly to S3. ① Client asks for upload URL. ② Server creates signed S3 URL (valid 15 min). ③ Client uploads directly to S3. ④ S3 notifies server on completion. This offloads all heavy media transfer from app servers entirely.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>Event-Driven Architecture (Kafka)</h4><p><strong>Apache Kafka</strong> is a distributed message streaming platform. The Post Service publishes a "new_post_created" event. Multiple independent <strong>consumers</strong> process it — image processor, feed fan-out, notifications, search indexer. If one consumer crashes, others are unaffected. Kafka guarantees <strong>at-least-once delivery</strong> and retains messages for days, so workers can replay failed events. This <strong>decouples</strong> services — the Post Service doesn't know or care what happens downstream.</p></div>
+<div class="decision"><span class="dtag">Key Decision</span><h4>Why Async Processing?</h4><p>User gets "Post shared!" in ~500ms without waiting for thumbnails (2s), fan-out to 10K followers (3s), or search indexing (1s). Background total: 5-10s. Perceived latency: 500ms. If a worker crashes, Kafka retries. This is the <strong>#1 pattern</strong> for responsive systems: acknowledge fast, process in background.</p></div>
+</div></section>
+
+<section id="feed"><div class="wrap">
+<span class="lab">04 — The Heart</span>
+<h2 class="stitle">News Feed Generation</h2>
+<p class="sdesc">The most complex component — how Instagram decides what you see.</p>
+<div class="dia"><div class="dia-t">Hybrid Fan-out Model</div><div class="svgw">
+<svg viewBox="0 0 880 440" width="100%" style="max-width:880px" xmlns="http://www.w3.org/2000/svg">
+<!-- LEFT: Push -->
+<rect x="5" y="5" width="425" height="250" rx="9" fill="rgba(225,48,108,.03)" stroke="rgba(225,48,108,.1)"/>
+<text x="25" y="25" fill="#e1306c" font-size="11" font-weight="700">FAN-OUT ON WRITE (Push)</text>
+<text x="25" y="40" fill="#7a7a96" font-size="8">For regular users (&lt; 10K followers)</text>
+
+<rect x="25" y="55" width="105" height="40" rx="6" fill="url(#g1)"/>
+<text x="77" y="73" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">User A Posts</text>
+<text x="77" y="85" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="7">New photo</text>
+<line x1="132" y1="75" x2="162" y2="75" stroke="#e1306c" stroke-width="1"/>
+<rect x="165" y="55" width="110" height="40" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="220" y="73" text-anchor="middle" fill="#e4e4f0" font-size="8" font-weight="600">Fan-out Worker</text>
+<text x="220" y="85" text-anchor="middle" fill="#7a7a96" font-size="7">Get 5K followers</text>
+
+<line x1="220" y1="97" x2="65" y2="115" stroke="#555" stroke-width=".7" stroke-dasharray="3,3"/>
+<line x1="220" y1="97" x2="165" y2="115" stroke="#555" stroke-width=".7" stroke-dasharray="3,3"/>
+<line x1="220" y1="97" x2="265" y2="115" stroke="#555" stroke-width=".7" stroke-dasharray="3,3"/>
+<line x1="220" y1="97" x2="365" y2="115" stroke="#555" stroke-width=".7" stroke-dasharray="3,3"/>
+
+<rect x="22" y="117" width="85" height="28" rx="4" fill="rgba(252,204,99,.07)" stroke="#fccc63" stroke-width=".6"/>
+<text x="64" y="134" text-anchor="middle" fill="#fccc63" font-size="7" font-weight="600">B's Cache</text>
+<rect x="117" y="117" width="85" height="28" rx="4" fill="rgba(252,204,99,.07)" stroke="#fccc63" stroke-width=".6"/>
+<text x="159" y="134" text-anchor="middle" fill="#fccc63" font-size="7" font-weight="600">C's Cache</text>
+<rect x="212" y="117" width="85" height="28" rx="4" fill="rgba(252,204,99,.07)" stroke="#fccc63" stroke-width=".6"/>
+<text x="254" y="134" text-anchor="middle" fill="#fccc63" font-size="7" font-weight="600">D's Cache</text>
+<rect x="317" y="117" width="85" height="28" rx="4" fill="rgba(252,204,99,.07)" stroke="#fccc63" stroke-width=".6"/>
+<text x="359" y="134" text-anchor="middle" fill="#fccc63" font-size="7" font-weight="600">E's Cache</text>
+
+<text x="25" y="172" fill="#27c76e" font-size="8">✓ Reads instant — feed pre-computed in Redis</text>
+<text x="25" y="186" fill="#27c76e" font-size="8">✓ Open app → feed ready, zero computation</text>
+<text x="25" y="206" fill="#fd1d1d" font-size="8">✗ Expensive for users with millions of followers</text>
+<text x="25" y="220" fill="#fd1d1d" font-size="8">✗ Wastes writes for inactive followers (~20%)</text>
+
+<!-- RIGHT: Pull -->
+<rect x="445" y="5" width="430" height="250" rx="9" fill="rgba(0,212,255,.03)" stroke="rgba(0,212,255,.1)"/>
+<text x="465" y="25" fill="#00d4ff" font-size="11" font-weight="700">FAN-OUT ON READ (Pull)</text>
+<text x="465" y="40" fill="#7a7a96" font-size="8">For celebrities (&gt; 10K followers)</text>
+
+<rect x="465" y="55" width="105" height="40" rx="6" fill="url(#g2)"/>
+<text x="517" y="73" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Celebrity Posts</text>
+<text x="517" y="85" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="7">10M+ followers</text>
+<line x1="517" y1="97" x2="517" y2="115" stroke="#555" stroke-width=".7" stroke-dasharray="3,3"/>
+<rect x="465" y="117" width="105" height="35" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="517" y="133" text-anchor="middle" fill="#e4e4f0" font-size="8" font-weight="600">Posts Table</text>
+<text x="517" y="145" text-anchor="middle" fill="#7a7a96" font-size="7">Just store it</text>
+
+<rect x="635" y="55" width="105" height="40" rx="6" fill="rgba(252,204,99,.07)" stroke="#fccc63"/>
+<text x="687" y="73" text-anchor="middle" fill="#fccc63" font-size="9" font-weight="600">Follower Opens</text>
+<text x="687" y="85" text-anchor="middle" fill="#7a7a96" font-size="7">Feed request</text>
+<line x1="687" y1="97" x2="687" y2="115" stroke="#555" stroke-width=".7" stroke-dasharray="3,3"/>
+<rect x="615" y="117" width="145" height="42" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="687" y="133" text-anchor="middle" fill="#e4e4f0" font-size="8" font-weight="600">Feed Aggregator</text>
+<text x="687" y="145" text-anchor="middle" fill="#7a7a96" font-size="7">Fetch celeb posts + merge</text>
+<text x="687" y="155" text-anchor="middle" fill="#7a7a96" font-size="7">with cached feed</text>
+<line x1="572" y1="135" x2="613" y2="135" stroke="#555" stroke-width=".7" stroke-dasharray="3,3"/>
+
+<text x="465" y="186" fill="#27c76e" font-size="8">✓ No wasteful writes to millions of feeds</text>
+<text x="465" y="200" fill="#27c76e" font-size="8">✓ Saves massive storage &amp; compute</text>
+<text x="465" y="220" fill="#fd1d1d" font-size="8">✗ Slower read — fetch &amp; merge at read time</text>
+<text x="465" y="234" fill="#fd1d1d" font-size="8">✗ More complex aggregation logic</text>
+
+<!-- BOTTOM -->
+<rect x="15" y="275" width="850" height="145" rx="9" fill="#18182a" stroke="#303044"/>
+<text x="440" y="300" text-anchor="middle" fill="#e4e4f0" font-size="12" font-weight="700">🔀 HYBRID — How It All Merges</text>
+<text x="40" y="325" fill="#7a7a96" font-size="9">1. User opens Instagram → Feed Service checks Redis for pre-computed feed (push model results)</text>
+<text x="40" y="343" fill="#7a7a96" font-size="9">2. Simultaneously fetches latest posts from followed celebrities (pull model)</text>
+<text x="40" y="361" fill="#7a7a96" font-size="9">3. Merges both sets → Passes combined list to ML Ranking Model</text>
+<text x="40" y="379" fill="#7a7a96" font-size="9">4. Ranking model scores each post (engagement prediction · recency · relationship strength)</text>
+<text x="40" y="397" fill="#7a7a96" font-size="9">5. Client receives ranked feed with CDN URLs → Renders with lazy loading + infinite scroll</text>
+</svg>
+</div></div>
+
+<div class="concept"><span class="ctag">Concept</span><h4>Fan-out on Write vs Read</h4><p><strong>Push (Write):</strong> On post, push post_id into every follower's Redis list. Pros: reads are instant. Cons: 10M followers = 10M writes per post. <strong>Pull (Read):</strong> On feed open, fetch latest from everyone you follow, merge, rank. Pros: zero write overhead. Cons: slow reads. <strong>Hybrid:</strong> Push for regular users, pull for celebrities (&gt;10K). Merge at read time. This is the industry gold standard.</p></div>
+<div class="decision"><span class="dtag">Key Decision</span><h4>Celebrity Threshold (~10K Followers)</h4><p>Below 10K, pushing to feed caches costs ~10ms. Above 10K, write amplification grows linearly — 400M followers = 400M writes. The threshold is tunable and can be dynamic: if only 5% of 50K followers are active, push to just 2.5K active ones.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>ML-Based Feed Ranking</h4><p>Instagram's feed is ranked by a deep learning model scoring every candidate post. Signals: <strong>engagement prediction</strong> (will you like this?), <strong>recency</strong>, <strong>relationship strength</strong> (interaction frequency), <strong>content-type affinity</strong> (reels vs photos), <strong>session context</strong>. Model runs in ~10-20ms via TensorFlow Serving. Posts aren't chronological — they're ordered by predicted value to you.</p></div>
+</div></section>
+
+<section id="store"><div class="wrap">
+<span class="lab">05 — Storage</span>
+<h2 class="stitle">Storage Architecture</h2>
+<p class="sdesc">Hundreds of petabytes of media, efficiently stored and served.</p>
+<div class="dia"><div class="dia-t">Media Storage &amp; DB Schema</div><div class="svgw">
+<svg viewBox="0 0 860 310" width="100%" style="max-width:860px" xmlns="http://www.w3.org/2000/svg">
+<rect x="10" y="15" width="100" height="48" rx="7" fill="url(#g1)"/>
+<text x="60" y="36" text-anchor="middle" fill="#fff" font-size="9" font-weight="600">Original</text>
+<text x="60" y="49" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size="7">5MB JPEG</text>
+<line x1="112" y1="39" x2="138" y2="39" stroke="#888" stroke-width="1"/>
+
+<rect x="142" y="5" width="145" height="72" rx="7" fill="#18182a" stroke="#303044"/>
+<text x="214" y="22" text-anchor="middle" fill="#e4e4f0" font-size="9" font-weight="600">Image Processor</text>
+<text x="214" y="36" text-anchor="middle" fill="#7a7a96" font-size="7">→ 1080×1080 (feed)</text>
+<text x="214" y="48" text-anchor="middle" fill="#7a7a96" font-size="7">→ 640×640 (medium)</text>
+<text x="214" y="60" text-anchor="middle" fill="#7a7a96" font-size="7">→ 150×150 (thumb)</text>
+<text x="214" y="72" text-anchor="middle" fill="#7a7a96" font-size="7">→ WebP &amp; AVIF variants</text>
+
+<line x1="289" y1="28" x2="320" y2="18" stroke="#555" stroke-width=".8" stroke-dasharray="3,3"/>
+<line x1="289" y1="55" x2="320" y2="60" stroke="#555" stroke-width=".8" stroke-dasharray="3,3"/>
+
+<rect x="324" y="2" width="135" height="35" rx="6" fill="rgba(39,199,110,.07)" stroke="#27c76e" stroke-width=".7"/>
+<text x="391" y="17" text-anchor="middle" fill="#27c76e" font-size="8" font-weight="600">S3 Hot (recent)</text>
+<text x="391" y="30" text-anchor="middle" fill="#7a7a96" font-size="7">&lt; 30 days old</text>
+<rect x="324" y="42" width="135" height="35" rx="6" fill="rgba(64,93,230,.07)" stroke="#405de6" stroke-width=".7"/>
+<text x="391" y="57" text-anchor="middle" fill="#405de6" font-size="8" font-weight="600">S3 Glacier (cold)</text>
+<text x="391" y="70" text-anchor="middle" fill="#7a7a96" font-size="7">~10× cheaper</text>
+
+<line x1="461" y1="19" x2="498" y2="19" stroke="#27c76e" stroke-width=".8"/>
+<rect x="502" y="2" width="210" height="35" rx="6" fill="rgba(39,199,110,.07)" stroke="#27c76e" stroke-width=".7"/>
+<text x="607" y="17" text-anchor="middle" fill="#27c76e" font-size="9" font-weight="600">🌐 CDN — 200+ Edge PoPs</text>
+<text x="607" y="30" text-anchor="middle" fill="#7a7a96" font-size="7">Cache popular images globally</text>
+
+<!-- DB Schema -->
+<rect x="10" y="95" width="840" height="200" rx="9" fill="rgba(131,58,180,.03)" stroke="rgba(131,58,180,.1)"/>
+<text x="30" y="113" fill="#833ab4" font-size="9" font-weight="600" letter-spacing="1.5">DATABASE SCHEMA (PostgreSQL — Sharded)</text>
+
+<rect x="25" y="125" width="155" height="160" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="102" y="142" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="600" font-family="JetBrains Mono">posts</text>
+<text x="34" y="158" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">post_id    BIGINT PK</text>
+<text x="34" y="170" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">user_id    BIGINT FK</text>
+<text x="34" y="182" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">media_url  VARCHAR</text>
+<text x="34" y="194" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">caption    TEXT</text>
+<text x="34" y="206" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">created_at TIMESTAMP</text>
+<text x="34" y="218" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">like_count INT</text>
+<text x="102" y="276" text-anchor="middle" fill="#e1306c" font-size="7">Shard: user_id</text>
+
+<rect x="195" y="125" width="155" height="160" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="272" y="142" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="600" font-family="JetBrains Mono">users</text>
+<text x="204" y="158" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">user_id    BIGINT PK</text>
+<text x="204" y="170" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">username   VARCHAR UQ</text>
+<text x="204" y="182" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">email      VARCHAR</text>
+<text x="204" y="194" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">bio        TEXT</text>
+<text x="204" y="206" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">avatar_url VARCHAR</text>
+<text x="272" y="276" text-anchor="middle" fill="#e1306c" font-size="7">Shard: user_id</text>
+
+<rect x="365" y="125" width="155" height="160" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="442" y="142" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="600" font-family="JetBrains Mono">follows</text>
+<text x="374" y="158" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">follower_id  BIGINT</text>
+<text x="374" y="170" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">followee_id  BIGINT</text>
+<text x="374" y="182" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">created_at   TS</text>
+<text x="374" y="200" fill="#e1306c" font-size="7">PK: (follower,followee)</text>
+<text x="442" y="276" text-anchor="middle" fill="#e1306c" font-size="7">Dual-indexed</text>
+
+<rect x="535" y="125" width="155" height="160" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="612" y="142" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="600" font-family="JetBrains Mono">comments</text>
+<text x="544" y="158" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">comment_id BIGINT PK</text>
+<text x="544" y="170" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">post_id    BIGINT FK</text>
+<text x="544" y="182" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">user_id    BIGINT FK</text>
+<text x="544" y="194" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">text       TEXT</text>
+<text x="612" y="276" text-anchor="middle" fill="#e1306c" font-size="7">Shard: post_id</text>
+
+<rect x="705" y="125" width="135" height="160" rx="6" fill="#18182a" stroke="#303044"/>
+<text x="772" y="142" text-anchor="middle" fill="#00d4ff" font-size="8" font-weight="600" font-family="JetBrains Mono">likes</text>
+<text x="714" y="158" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">user_id  BIGINT</text>
+<text x="714" y="170" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">post_id  BIGINT</text>
+<text x="714" y="182" fill="#7a7a96" font-size="7" font-family="JetBrains Mono">created  TS</text>
+<text x="714" y="200" fill="#e1306c" font-size="7">PK: (user,post)</text>
+<text x="714" y="216" fill="#7a7a96" font-size="7">Counter → Redis</text>
+<text x="772" y="276" text-anchor="middle" fill="#e1306c" font-size="7">Shard: post_id</text>
+</svg>
+</div></div>
+
+<div class="concept"><span class="ctag">Concept</span><h4>Database Sharding</h4><p>Split your DB horizontally across multiple servers. 2B user rows → 4096 shards. Each shard holds a subset: <code>shard = user_id % 4096</code>. Linear scalability — add shards for more capacity. Challenge: <strong>cross-shard queries</strong> ("all posts liked by users in NYC") scatter-gather across all shards. Instagram uses <code>user_id</code> as shard key since most queries are user-centric.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>Hot vs Cold Storage Tiering</h4><p>A photo today gets 1000× more views than one from 3 years ago. <strong>Hot</strong> (S3 Standard) = fast, costly. <strong>Cold</strong> (Glacier) = ~10× cheaper, higher latency. Auto-migrate after ~30 days. Old photos fetched from Glacier get temporarily CDN-cached. At 550 PB scale, this saves tens of millions in storage costs annually.</p></div>
+<div class="decision"><span class="dtag">Key Decision</span><h4>Separate Media from Metadata</h4><p>Photos → S3 (object storage). Metadata → PostgreSQL. Why not store blobs in DB? It bloats WAL logs, kills buffer cache, slows backups, makes sharding harder. S3 is purpose-built: 11 nines durability, infinite scale, pennies per GB. DB stores only a URL pointer.</p></div>
+</div></section>
+
+<section id="search"><div class="wrap">
+<span class="lab">06 — Discovery</span>
+<h2 class="stitle">Search &amp; Explore</h2>
+<div class="cg">
+<div class="card"><h3>🔍 Elasticsearch</h3><p>Three indices: <strong>Users</strong> (username, bio), <strong>Hashtags</strong> (#travel → tagged posts), <strong>Locations</strong> (geo-indexed). Typing "tay" returns prefix-matched results in ms via inverted indices + n-gram tokenizers. Ranked by relevance, social proximity (friends-of-friends rank higher), and popularity.</p></div>
+<div class="card"><h3>🧭 Explore Pipeline</h3><p>① <strong>Candidate generation:</strong> ~500 posts from trending, topic models, collaborative filtering. ② <strong>DL ranker:</strong> scores by interests, history, content features. ③ <strong>Diversity filter:</strong> varied topics in final 25 posts. All in &lt;200ms.</p></div>
+</div>
+<div class="concept"><span class="ctag">Concept</span><h4>Inverted Index</h4><p>Normal: "Post 123 → sunset at beach". Inverted: "sunset → [123, 456, 789]", "beach → [123, 999]". Search "sunset beach" = intersection of both lists. This is how Elasticsearch (via Lucene) enables instant full-text search. Fundamentally different from <code>LIKE '%sunset%'</code> which full-table-scans every row.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>Collaborative Filtering</h4><p>"Users who liked posts similar to yours also liked these." Finds behavior patterns without understanding content. Users A, B, C liked Bali photos. A likes a new one → recommend to B, C. Instagram combines this with <strong>content-based filtering</strong> (computer vision on actual image features) for the Explore page.</p></div>
+</div></section>
+
+<section id="notif"><div class="wrap">
+<span class="lab">07 — Engagement</span>
+<h2 class="stitle">Notification System</h2>
+<div class="cg">
+<div class="card"><h3>🔔 Pipeline</h3><p>Events (like, comment, follow) → <strong>Kafka</strong> → Notification Service (dedup, batch 5 likes into 1 notification, check user prefs, rate limit) → Channels: <strong>Push</strong> (APNS/FCM for mobile), <strong>WebSocket</strong> (in-app real-time), <strong>Email</strong> (weekly digests). History stored in Cassandra (time-sorted per user).</p></div>
+<div class="card"><h3>🔄 Batching</h3><p>Instead of 5 separate "X liked your post" → one "Alice, Bob, and 3 others liked your post". Uses a <strong>30-second sliding window</strong>: collect events, aggregate, then send. Reduces notification fatigue and saves push delivery costs. Critical for viral posts that get thousands of likes per minute.</p></div>
+</div>
+<div class="concept"><span class="ctag">Concept</span><h4>WebSockets</h4><p>Persistent, bidirectional TCP connections. Unlike polling (client asks every 5s — 99% wasted), the server pushes data instantly. Trade-off: ~10KB RAM per connection. 500M users = ~5TB. Instagram uses dedicated <strong>WebSocket gateway servers</strong> (separate from API servers), often on lightweight Netty/Go frameworks.</p></div>
+</div></section>
+
+<section id="story"><div class="wrap">
+<span class="lab">08 — Ephemeral</span>
+<h2 class="stitle">Stories Architecture</h2>
+<div class="cg">
+<div class="card"><h3>⏱️ TTL-Based Storage</h3><p>Data auto-deletes after 24h. Redis: <code>SET story:123 data EX 86400</code>. Cassandra: <code>INSERT ... USING TTL 86400</code>. No cron needed. The "story ring" is a Redis sorted set of users with active stories, also TTL-managed.</p></div>
+<div class="card"><h3>👀 Viewer Tracking</h3><p>Write-heavy, time-series: Cassandra. Model: <code>story_id → [(viewer, ts), ...]</code> wide-column. Writes are append-only. "Who viewed" = single-row read. Old data auto-expires with TTL.</p></div>
+</div>
+<div class="concept"><span class="ctag">Concept</span><h4>TTL (Time-to-Live)</h4><p>Data <strong>auto-deletes</strong> after a duration. The storage engine marks entries expired during compaction — no expensive cron scans. Used for: stories (24h), sessions (7d), OTP (5min), rate-limit counters (1min), pre-signed URLs (15min).</p></div>
+</div></section>
+
+<section id="cdn"><div class="wrap">
+<span class="lab">09 — Delivery</span>
+<h2 class="stitle">CDN &amp; Media Delivery</h2>
+<div class="cg">
+<div class="card"><h3>🌐 How CDN Works</h3><p>Caches media at 200+ global edge PoPs. User in Tokyo → Tokyo PoP (~20ms) instead of US origin (~200ms). First request = cache miss (fetch from S3). All subsequent requests = cache hit. Popular images: 99%+ hit rate. Instagram uses a multi-CDN strategy (CloudFront + Akamai) for redundancy.</p></div>
+<div class="card"><h3>📐 Smart Delivery</h3><p>Different sizes per device: 150px grid, 640px small screen, 1080px full. Format negotiation via <code>Accept</code> header: WebP for Android (30% smaller), AVIF for modern browsers, JPEG fallback. CDN handles this transparently.</p></div>
+</div>
+<div class="decision"><span class="dtag">Key Decision</span><h4>CDN Cache Invalidation</h4><p>Deleted photo must purge from 200+ edges. Solution: <strong>versioned URLs</strong> (<code>/img/v3/abc123.webp</code>). Delete = remove DB entry; old URL 404s on TTL expiry (~24h). For urgent purges (legal), an invalidation API purges all edges instantly. Avoids "cache invalidation is hard" via immutable URLs.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>Point of Presence (PoP)</h4><p>A physical data center in a city with CDN servers. Major CDNs have 200-300 PoPs globally. DNS routes you to the nearest PoP via <strong>anycast</strong> (same IP, multiple locations — routed by network proximity) or geo-DNS. Closer PoP = lower latency.</p></div>
+</div></section>
+
+<section id="cache"><div class="wrap">
+<span class="lab">10 — Caching</span>
+<h2 class="stitle">Caching Strategy</h2>
+<p class="sdesc">Multi-layered caching makes Instagram feel instant at 500K+ req/s.</p>
+<table>
+<tr><th>Layer</th><th>Tech</th><th>What</th><th>TTL</th><th>Hit Rate</th></tr>
+<tr><td>CDN Edge</td><td>CloudFront</td><td>Images, videos, thumbnails</td><td>24h</td><td>~95%</td></tr>
+<tr><td>Feed Cache</td><td>Redis</td><td>Pre-computed feed (post ID lists)</td><td>LRU evict</td><td>~90%</td></tr>
+<tr><td>Profile</td><td>Memcached</td><td>User objects, follower counts</td><td>5 min</td><td>~98%</td></tr>
+<tr><td>Sessions</td><td>Redis</td><td>Auth tokens, session data</td><td>7 days</td><td>~99%</td></tr>
+<tr><td>Counters</td><td>Redis</td><td>Like counts, comment counts</td><td>Async flush</td><td>~99%</td></tr>
+<tr><td>Social Graph</td><td>Redis + TAO</td><td>Follower/following lists</td><td>10 min</td><td>~95%</td></tr>
+</table>
+<div class="concept"><span class="ctag">Concept</span><h4>Cache Patterns</h4>
+<p><strong>Write-through:</strong> Write cache + DB simultaneously. Consistent but slower. Used: profile updates.</p>
+<p><strong>Write-behind:</strong> Write cache first, async flush to DB. Fast but risk data loss. Used: like counts (Redis INCR, batch-write to DB every 5s).</p>
+<p><strong>Cache-aside:</strong> Read cache → miss → read DB → populate cache. Most common. Used: user profiles, post metadata.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>Thundering Herd Problem</h4><p>Celebrity posts → millions open app simultaneously. If cache expires, all requests hit DB at once. Solutions: <strong>Cache stampede lock</strong> (one request repopulates, others wait), <strong>jittered TTL</strong> (random TTL offset so caches don't expire together), <strong>probabilistic early recompute</strong> (small % of requests refresh before TTL expires).</p></div>
+</div></section>
+
+<section id="db"><div class="wrap">
+<span class="lab">11 — Databases</span>
+<h2 class="stitle">Database Choices</h2>
+<p class="sdesc">Polyglot persistence — the right database for each workload.</p>
+<table>
+<tr><th>Database</th><th>Type</th><th>Used For</th><th>Why</th></tr>
+<tr><td><strong>PostgreSQL</strong></td><td>RDBMS</td><td>Users, posts, comments, likes</td><td>ACID, strong consistency, mature, shardable (Citus)</td></tr>
+<tr><td><strong>Cassandra</strong></td><td>Wide-Column</td><td>Feed timelines, activity, story viewers</td><td>Insane write throughput, linear scale, built-in TTL</td></tr>
+<tr><td><strong>Redis</strong></td><td>In-Memory K/V</td><td>Feed cache, counters, rate limits, sessions</td><td>Sub-ms reads, atomic ops (INCR), sorted sets</td></tr>
+<tr><td><strong>Elasticsearch</strong></td><td>Search Engine</td><td>User/hashtag/location search</td><td>Full-text search, inverted indices, geo queries</td></tr>
+<tr><td><strong>Amazon S3</strong></td><td>Object Store</td><td>Photos, videos, thumbnails</td><td>11 nines durability, infinite scale, cheap</td></tr>
+<tr><td><strong>Graph DB (TAO)</strong></td><td>Graph</td><td>Social graph, recommendations</td><td>Traversal queries (friends-of-friends) in O(1) per hop</td></tr>
+</table>
+<div class="concept"><span class="ctag">Concept</span><h4>Polyglot Persistence</h4><p>Using <strong>different databases for different jobs</strong> instead of forcing everything into one. Relational data (users, relationships) → PostgreSQL. Time-series writes → Cassandra. Caching → Redis. Search → Elasticsearch. Blobs → S3. Each DB is optimized for its access pattern. Trade-off: operational complexity — you must manage, monitor, and backup 6 different database systems.</p></div>
+<div class="concept"><span class="ctag">Concept</span><h4>CAP Theorem</h4><p>A distributed system can guarantee at most 2 of 3: <strong>Consistency</strong> (every read gets latest write), <strong>Availability</strong> (every request gets a response), <strong>Partition tolerance</strong> (system works despite network splits). Since network partitions are inevitable, you choose CP or AP. PostgreSQL = CP (consistency first). Cassandra = AP (availability first, eventual consistency). Instagram picks per-workload: CP for likes/follows (counts must be accurate), AP for feed (slightly stale is fine).</p></div>
+</div></section>
+
+<section id="consist"><div class="wrap">
+<span class="lab">12 — Consistency</span>
+<h2 class="stitle">Consistency Model</h2>
+<div class="cg">
+<div class="card"><h3>🔒 Strong Consistency</h3><p>Used for: <strong>Like/follow counts</strong> (users notice if count is wrong), <strong>User authentication</strong> (password changes must take effect immediately), <strong>Direct messages</strong> (order must be preserved). Achieved via PostgreSQL primary-replica with synchronous replication for critical paths.</p></div>
+<div class="card"><h3>🔄 Eventual Consistency</h3><p>Used for: <strong>News feed</strong> (a 2-second delay is unnoticeable), <strong>Explore page</strong> (trending content can be slightly stale), <strong>Search index</strong> (new posts appearing in search 5s late is fine), <strong>Notification counts</strong>. Achieved via Cassandra (tunable consistency) and async replication.</p></div>
+</div>
+<div class="concept"><span class="ctag">Concept</span><h4>Eventual Consistency</h4><p>After a write, not all nodes have the latest data immediately — but given enough time (usually milliseconds to seconds), all replicas <strong>converge to the same value</strong>. Example: you post a photo. Your follower in Japan might not see it for 2 seconds (their read hits a replica that hasn't received the write yet). Within 5 seconds, all replicas sync. For feeds, this is perfectly acceptable. For bank transactions, it's not — that needs strong consistency.</p></div>
+</div></section>
+
+<section id="dec"><div class="wrap">
+<span class="lab">13 — Summary</span>
+<h2 class="stitle">Key Architectural Decisions</h2>
+<p class="sdesc">Every major decision and its rationale — the kind of reasoning interviewers look for.</p>
+
+<div class="decision"><span class="dtag">Decision 1</span><h4>Microservices over Monolith</h4><p><strong>Why:</strong> Independent deployment, per-service scaling, team autonomy. <strong>Trade-off:</strong> Network latency between services, distributed debugging, eventual consistency challenges. Instagram started as a monolith (Django) and gradually decomposed into services as the team grew.</p></div>
+
+<div class="decision"><span class="dtag">Decision 2</span><h4>Hybrid Fan-out for Feed</h4><p><strong>Why:</strong> Pure push is too expensive for celebrities (400M writes per post). Pure pull is too slow for regular users. Hybrid gives fast reads for 99% of users while avoiding write amplification for the 1% of celebrities. <strong>Trade-off:</strong> More complex merging logic at read time.</p></div>
+
+<div class="decision"><span class="dtag">Decision 3</span><h4>Pre-signed URLs for Upload</h4><p><strong>Why:</strong> Offloads 200TB/day of media transfer from app servers. Servers generate a signed URL in &lt;5ms; client uploads directly to S3. <strong>Trade-off:</strong> Slightly more complex client logic; S3 must be globally available.</p></div>
+
+<div class="decision"><span class="dtag">Decision 4</span><h4>Kafka for Event-Driven Processing</h4><p><strong>Why:</strong> Decouples upload from processing. A single "new_post" event triggers 4+ independent workers. If search indexing is slow, it doesn't affect feed fan-out. Messages retained for replay. <strong>Trade-off:</strong> Added infrastructure complexity; at-least-once delivery requires idempotent consumers.</p></div>
+
+<div class="decision"><span class="dtag">Decision 5</span><h4>PostgreSQL with Sharding (not pure NoSQL)</h4><p><strong>Why:</strong> Instagram's core data (users, posts, likes) is inherently relational. PostgreSQL provides ACID, complex joins, and a mature ecosystem. Sharding (via pgbouncer + application-level routing, later Citus) adds horizontal scale. <strong>Trade-off:</strong> Cross-shard joins are expensive; schema migrations across 4096 shards require careful orchestration.</p></div>
+
+<div class="decision"><span class="dtag">Decision 6</span><h4>Redis for Feed Cache (not Memcached)</h4><p><strong>Why:</strong> Redis supports sorted sets (ZADD/ZRANGE) — perfect for time-ordered feeds. Memcached only has simple key-value. Redis also supports atomic INCR for like counters, pub/sub for real-time features, and TTL for expiration. <strong>Trade-off:</strong> Redis is single-threaded per instance (mitigated by clustering).</p></div>
+
+<div class="decision"><span class="dtag">Decision 7</span><h4>Multi-CDN Strategy</h4><p><strong>Why:</strong> No single CDN has perfect coverage everywhere. Using CloudFront + Akamai provides redundancy (if one CDN has an outage, traffic reroutes) and best latency globally (smart DNS chooses the fastest CDN per region). <strong>Trade-off:</strong> Higher cost; more complex cache invalidation across two CDN providers.</p></div>
+
+<div class="decision"><span class="dtag">Decision 8</span><h4>Eventual Consistency for Feeds, Strong for Auth</h4><p><strong>Why:</strong> Feed delays of 2-5 seconds are invisible to users but enable massive write scalability via async processing. Auth must be strongly consistent — a password change must take effect immediately. <strong>Trade-off:</strong> Developers must reason about consistency per feature, not per system.</p></div>
+
+<div class="decision"><span class="dtag">Decision 9</span><h4>Unique ID Generation: Snowflake-style IDs</h4><p>Instagram can't use auto-increment IDs across 4096 shards (they'd collide). Instead, they use a <strong>Snowflake-style</strong> ID: 64-bit integer = timestamp (41 bits) + shard ID (13 bits) + sequence (10 bits). This gives time-sortable, globally unique IDs without coordination between shards. Each shard generates its own IDs independently.</p></div>
+
+<div class="decision"><span class="dtag">Decision 10</span><h4>Rate Limiting: Token Bucket at API Gateway</h4><p>To prevent abuse (bots, scrapers), the API Gateway uses a <strong>token bucket</strong> algorithm per user. Each user gets a bucket of N tokens (e.g., 200). Each request consumes 1 token. Tokens refill at a fixed rate (e.g., 200/min). If the bucket is empty, requests are rejected with HTTP 429. Redis stores per-user bucket state with atomic DECR operations. Separate limits for different endpoints (stricter for DMs, relaxed for feed reads).</p></div>
+</div></section>
+
+<footer>
+<p>Instagram High-Level Design — System Design Reference</p>
+<p style="margin-top:.5rem;font-size:.75rem">Built as an educational reference covering architecture, data flow, storage, caching, and key design decisions.</p>
+</footer>
+</body>
+</html>
